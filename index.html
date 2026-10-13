@@ -1009,7 +1009,11 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         orderModalMessageEl.textContent = 'Pesanan "' + getOrderItemSummary(order) + '" sedang dikirim ke rekap Nasi Bakar Aca.';
         successOrderIdEl.textContent = currentOrderId;
         transferPaymentEl.hidden = true;
-        qrisPaymentEl.hidden = true;
+        if (order.payment === 'qris') {
+          renderPaymentQris(order);
+        } else {
+          qrisPaymentEl.hidden = true;
+        }
         closeOrderModalButton.textContent = 'Tutup';
         setOrderModalVisibility(true);
       }
