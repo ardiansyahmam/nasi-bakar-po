@@ -228,18 +228,25 @@
           'Total order: ' + (list || []).length + ' &nbsp;|&nbsp; Total omzet: ' + rp(grand);
       }
 
-      function fetchOrders() {
+      function fetchOrders(done) {
         var cb = '__ord_' + Date.now().toString(36);
         var params = new URLSearchParams({ action: 'orders', pin: omzetPin, callback: cb });
         var script = document.createElement('script');
         script.src = orderEndpoint + '?' + params.toString();
+        var finished = false;
+        function finish(ok) { if (finished) return; finished = true; if (done) done(ok); }
         function cleanup() {
           if (script.parentNode) script.parentNode.removeChild(script);
           try { delete window[cb]; } catch (e) { window[cb] = undefined; }
         }
-        var timer = setTimeout(function () { cleanup(); }, 20000);
-        window[cb] = function (res) { clearTimeout(timer); cleanup(); if (res && res.ok) renderOrders(res.orders); };
-        script.onerror = function () { clearTimeout(timer); cleanup(); };
+        var timer = setTimeout(function () { cleanup(); finish(false); }, 20000);
+        window[cb] = function (res) {
+          clearTimeout(timer); cleanup();
+          var ok = !!(res && res.ok);
+          if (ok) renderOrders(res.orders);
+          finish(ok);
+        };
+        script.onerror = function () { clearTimeout(timer); cleanup(); finish(false); };
         document.head.appendChild(script);
       }
 
@@ -292,7 +299,17 @@
       document.getElementById('omzet-refresh').addEventListener('click', function () {
         if (omzetPin) fetchOmzet();
       });
-      document.getElementById('omzet-print').addEventListener('click', function () { window.print(); });
+      document.getElementById('omzet-print').addEventListener('click', function () {
+        var btn = this;
+        var label = btn.innerHTML;
+        btn.disabled = true;
+        btn.textContent = 'Menyiapkan...';
+        fetchOrders(function () {
+          btn.disabled = false;
+          btn.innerHTML = label;
+          window.print();
+        });
+      });
     })();
   </script>
 </body>
