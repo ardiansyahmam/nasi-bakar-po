@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="data:," />
+  <title>Omzet — Nasi Bakar</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Caslon+Display&display=swap');
+
+    :root {
+      color-scheme: light dark;
+      --page: #f4ead8;
+      --paper: #fffaf0;
+      --ink: #25261f;
+      --muted: #696b5d;
+      --leaf: #315a36;
+      --leaf-dark: #234529;
+      --lime: #9fbf64;
+      --chili: #b8412d;
+      --line: #d9ccb4;
+      --input: #fffdf8;
+      --shadow: 0 16px 44px rgba(64, 50, 27, .12);
+      --soft-shadow: 0 7px 20px rgba(64, 50, 27, .09);
+      --focus: #e09b55;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #151a13;
+        --paper: #20251d;
+        --ink: #f3ebdb;
+        --muted: #b8b8a9;
+        --leaf: #7ba05b;
+        --leaf-dark: #5a7a42;
+        --line: #3a4034;
+        --input: #262b22;
+        --shadow: 0 16px 44px rgba(0, 0, 0, .4);
+        --soft-shadow: 0 7px 20px rgba(0, 0, 0, .3);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "DM Sans", sans-serif;
+      background: var(--page);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { max-width: 720px; margin: 0 auto; padding: 28px 18px 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .brand a { color: var(--muted); text-decoration: none; font-size: .85rem; }
+    .brand a:hover { text-decoration: underline; }
+    .section-head { display: block; margin-bottom: 22px; }
+    .section-head h2 { margin: 0 0 6px; font-family: "Libre Caslon Display", Georgia, serif; font-weight: 400; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.1; }
+    .section-head p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+    .omzet { display: grid; gap: 18px; }
+    .omzet-card { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 22px; box-shadow: var(--soft-shadow); }
+    .omzet-lock-text { margin: 0 0 14px; color: var(--muted); }
+    .omzet-pin-row { display: flex; gap: 10px; }
+    .omzet-pin-row input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--input); color: var(--ink); font-size: 1rem; }
+    .omzet-pin-row input:focus { outline: 2px solid var(--focus); border-color: var(--focus); }
+    .omzet-pin-row button { padding: 12px 18px; border-radius: 12px; border: none; background: var(--leaf); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; white-space: nowrap; }
+    .omzet-pin-row button:disabled { opacity: .6; cursor: wait; }
+    .omzet-error { color: var(--chili); font-weight: 600; margin: 12px 0 0; }
+    .omzet-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .omzet-stat { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 6px; box-shadow: var(--soft-shadow); }
+    .omzet-stat-label { font-size: .78rem; color: var(--muted); }
+    .omzet-stat-value { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .omzet-stat.ok .omzet-stat-value { color: var(--leaf); }
+    .omzet-stat.warn .omzet-stat-value { color: var(--chili); }
+    .omzet-sub { margin: 6px 0 0; font-size: 1.02rem; }
+    .omzet-table-wrap { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--soft-shadow); }
+    .omzet-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    .omzet-table th, .omzet-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    .omzet-table th { color: var(--muted); font-weight: 700; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; }
+    .omzet-table tr:last-child td { border-bottom: none; }
+    .omzet-refresh { justify-self: start; padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; font-size: .95rem; cursor: pointer; }
+    .omzet-updated { color: var(--muted); font-size: .8rem; margin: 0; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="brand"><a href="../">← Kembali ke form order</a></div>
+    <section class="omzet" aria-labelledby="omzet-title">
+      <div class="section-head">
+        <h2 id="omzet-title">📊 Omzet Penjualan</h2>
+        <p>Ringkasan langsung dari rekap spreadsheet</p>
+      </div>
+      <div id="omzet-lock" class="omzet-card">
+        <p class="omzet-lock-text">Halaman ini khusus penjual. Masukkan PIN untuk melihat omzet.</p>
+        <div class="omzet-pin-row">
+          <input id="omzet-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" maxlength="12" aria-label="PIN omzet" />
+          <button id="omzet-unlock" type="button">Lihat Omzet</button>
+        </div>
+        <p id="omzet-error" class="omzet-error" role="alert" hidden></p>
+      </div>
+      <div id="omzet-data" hidden>
+        <div class="omzet-cards">
+          <div class="omzet-stat"><span class="omzet-stat-label">Total Omzet</span><span class="omzet-stat-value" id="omz-total">Rp0</span></div>
+          <div class="omzet-stat ok"><span class="omzet-stat-label">Sudah Dibayar</span><span class="omzet-stat-value" id="omz-paid">Rp0</span></div>
+          <div class="omzet-stat warn"><span class="omzet-stat-label">Belum Dibayar</span><span class="omzet-stat-value" id="omz-unpaid">Rp0</span></div>
+          <div class="omzet-stat"><span class="omzet-stat-label">Total Order</span><span class="omzet-stat-value" id="omz-orders">0</span></div>
+        </div>
+        <h3 class="omzet-sub">Per Menu</h3>
+        <div class="omzet-table-wrap"><table class="omzet-table" id="omz-menu-table">
+          <thead><tr><th>Menu</th><th>Porsi</th><th>Omzet</th></tr></thead><tbody></tbody>
+        </table></div>
+        <h3 class="omzet-sub">Per Metode Bayar</h3>
+        <div class="omzet-table-wrap"><table class="omzet-table" id="omz-pay-table">
+          <thead><tr><th>Metode</th><th>Order</th><th>Nominal</th></tr></thead><tbody></tbody>
+        </table></div>
+        <button id="omzet-refresh" type="button" class="omzet-refresh">🔄 Muat ulang</button>
+        <p class="omzet-updated" id="omz-updated"></p>
+      </div>
+    </section>
+  </main>
+  <script>
+    /* Dashboard Omzet — JSONP ke Apps Script (PIN dicek di server) */
+    (function () {
+      var orderEndpoint = 'https://script.google.com/macros/s/AKfycbzBqUi_Uz7wREW615t1_2XJDKFC5Kbt7yNpd8yHLlQtdtONaLvB1f_DXJSlFvutXVJQMg/exec';
+      var MENU_PRICE = { ayam: 15000, cumi: 18000, tongkol: 15000 };
+      var MENU_NAME = { ayam: 'Nasi Bakar Ayam', cumi: 'Nasi Bakar Sambal Cumi', tongkol: 'Nasi Bakar Ikan Teri' };
+      var omzetPin = '';
+
+      function rp(n) { return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
+
+      var pinInput = document.getElementById('omzet-pin');
+      var unlockBtn = document.getElementById('omzet-unlock');
+      var errEl = document.getElementById('omzet-error');
+      var lockBox = document.getElementById('omzet-lock');
+      var dataBox = document.getElementById('omzet-data');
+
+      function showError(msg) { errEl.textContent = msg; errEl.hidden = false; }
+
+      function renderOmzet(d) {
+        lockBox.hidden = true;
+        dataBox.hidden = false;
+        document.getElementById('omz-total').textContent = rp(d.total_omzet);
+        document.getElementById('omz-paid').textContent = rp(d.sudah_dibayar);
+        document.getElementById('omz-unpaid').textContent = rp(d.belum_dibayar);
+        document.getElementById('omz-orders').textContent = d.total_order;
+        var menuBody = document.querySelector('#omz-menu-table tbody');
+        menuBody.innerHTML = '';
+        (d.per_menu || []).forEach(function (m) {
+          var tr = document.createElement('tr');
+          var td1 = document.createElement('td'); td1.textContent = MENU_NAME[m.id] || m.id;
+          var td2 = document.createElement('td'); td2.textContent = m.qty || 0;
+          var td3 = document.createElement('td'); td3.textContent = rp((m.qty || 0) * (MENU_PRICE[m.id] || 0));
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+          menuBody.appendChild(tr);
+        });
+        var payBody = document.querySelector('#omz-pay-table tbody');
+        payBody.innerHTML = '';
+        (d.per_bayar || []).forEach(function (p) {
+          var tr = document.createElement('tr');
+          var td1 = document.createElement('td'); td1.textContent = p.metode;
+          var td2 = document.createElement('td'); td2.textContent = p.order;
+          var td3 = document.createElement('td'); td3.textContent = rp(p.nominal);
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+          payBody.appendChild(tr);
+        });
+        document.getElementById('omz-updated').textContent =
+          'Diperbarui: ' + new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      }
+
+      function fetchOmzet() {
+        errEl.hidden = true;
+        unlockBtn.disabled = true;
+        var oldLabel = unlockBtn.textContent;
+        unlockBtn.textContent = 'Memuat...';
+        var cb = '__omzet_' + Date.now().toString(36);
+        var params = new URLSearchParams({ action: 'omzet', pin: omzetPin, callback: cb });
+        var script = document.createElement('script');
+        script.src = orderEndpoint + '?' + params.toString();
+        var done = false;
+        function cleanup() {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        }
+        function finish(label) { unlockBtn.disabled = false; unlockBtn.textContent = label; }
+        var timer = setTimeout(function () {
+          if (done) return;
+          done = true; cleanup(); finish(oldLabel);
+          showError('Koneksi lambat. Coba lagi.');
+        }, 20000);
+        window[cb] = function (res) {
+          if (done) return;
+          done = true; clearTimeout(timer); cleanup(); finish('Lihat Omzet');
+          if (!res || res.ok !== true) {
+            showError(res && res.error ? res.error : 'Gagal memuat omzet.');
+            return;
+          }
+          renderOmzet(res);
+        };
+        script.onerror = function () {
+          if (done) return;
+          done = true; clearTimeout(timer); cleanup(); finish(oldLabel);
+          showError('Tidak bisa menghubungi server rekap.');
+        };
+        document.head.appendChild(script);
+      }
+
+      unlockBtn.addEventListener('click', function () {
+        var v = pinInput.value.trim();
+        if (!v) { showError('Masukkan PIN dulu.'); pinInput.focus(); return; }
+        omzetPin = v;
+        fetchOmzet();
+      });
+      pinInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); unlockBtn.click(); }
+      });
+      document.getElementById('omzet-refresh').addEventListener('click', function () {
+        if (omzetPin) fetchOmzet();
+      });
+    })();
+  </script>
+</body>
+</html>
