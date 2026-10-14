@@ -1284,7 +1284,8 @@ L.push(sep);L.push(thC('Terima kasih!',cols));L.push('');L.push('');L.push('');
 return L.join('\n');
 }
 window.getThermalText=function(cols){return window.lastThermalOrder?buildThermalText(window.lastThermalOrder,cols||48):'';};
-printReceiptButton.addEventListener('click', function(){ window.print(); });
+function doPrint(){if(window.AndroidPOS&&window.AndroidPOS.printReceipt){window.AndroidPOS.printReceipt();}else{window.print();}}
+printReceiptButton.addEventListener('click', function(){ doPrint(); });
 
 closeOrderModalButton.addEventListener('click', function () {
 setOrderModalVisibility(false);
