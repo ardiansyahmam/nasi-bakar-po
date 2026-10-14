@@ -79,6 +79,19 @@
     .omzet-table tr:last-child td { border-bottom: none; }
     .omzet-refresh { justify-self: start; padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; font-size: .95rem; cursor: pointer; }
     .omzet-updated { color: var(--muted); font-size: .8rem; margin: 0; }
+    .omzet-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .omzet-print { padding: 12px 18px; border-radius: 12px; border: none; background: var(--leaf); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; }
+    #print-recap { display: none; }
+    @media print {
+      body > * { display: none !important; }
+      #print-recap { display: block !important; color: #000; background: #fff; padding: 10px; font-size: 12px; }
+      #print-recap h2 { text-align: center; margin: 0 0 2px; font-size: 16px; letter-spacing: 1px; }
+      #print-recap .rc-center { text-align: center; }
+      #print-recap .rc-line { border-top: 1px dashed #000; margin: 6px 0; }
+      #print-recap table { width: 100%; border-collapse: collapse; }
+      #print-recap th, #print-recap td { border: 1px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; font-size: 11px; }
+      #print-recap th { background: #eee; }
+    }
   </style>
 </head>
 <body>
@@ -112,8 +125,16 @@
         <div class="omzet-table-wrap"><table class="omzet-table" id="omz-pay-table">
           <thead><tr><th>Metode</th><th>Order</th><th>Nominal</th></tr></thead><tbody></tbody>
         </table></div>
-        <button id="omzet-refresh" type="button" class="omzet-refresh">🔄 Muat ulang</button>
+        <h3 class="omzet-sub">Daftar Pesanan</h3>
+        <div class="omzet-table-wrap"><table class="omzet-table" id="omz-orders-table">
+          <thead><tr><th>No</th><th>Order ID</th><th>Nama</th><th>Pesanan</th><th>Catatan</th><th>Total</th><th>Bayar</th></tr></thead><tbody></tbody>
+        </table></div>
+        <div class="omzet-actions">
+          <button id="omzet-refresh" type="button" class="omzet-refresh">🔄 Muat ulang</button>
+          <button id="omzet-print" type="button" class="omzet-print">🖨️ Print Rekap</button>
+        </div>
         <p class="omzet-updated" id="omz-updated"></p>
+        <div id="print-recap" aria-hidden="true"></div>
       </div>
     </section>
   </main>
@@ -164,6 +185,61 @@
         });
         document.getElementById('omz-updated').textContent =
           'Diperbarui: ' + new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        fetchOrders();
+      }
+
+      function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      function itemLine(qty, name, varian) {
+        if (!qty) return '';
+        return name + ' x' + qty + (varian ? ' (' + varian + ')' : '');
+      }
+
+      function renderOrders(list) {
+        var body = document.querySelector('#omz-orders-table tbody');
+        body.innerHTML = '';
+        var recapRows = '';
+        (list || []).forEach(function (o, i) {
+          var parts = [
+            itemLine(o.ayam, MENU_NAME.ayam, o.vAyam),
+            itemLine(o.cumi, MENU_NAME.cumi, o.vCumi),
+            itemLine(o.teri, MENU_NAME.tongkol, o.vTeri)
+          ].filter(Boolean);
+          if (o.pete) parts.push('Pete: ' + o.pete);
+          var pesanan = parts.join('; ');
+          var tr = document.createElement('tr');
+          [['', (i + 1)], ['', o.id], ['', o.nama], ['', pesanan], ['', o.catatan],
+           ['', rp(o.total)], ['', (o.bayar || '') + (o.status ? ' (' + o.status + ')' : '')]
+          ].forEach(function (c) { var td = document.createElement('td'); td.textContent = c[1]; tr.appendChild(td); });
+          body.appendChild(tr);
+          recapRows += '<tr><td>' + (i + 1) + '</td><td>' + esc(o.nama) + '<br><small>' + esc(o.id) + '</small></td>' +
+            '<td>' + esc(pesanan) + '</td><td>' + esc(o.catatan) + '</td><td>' + esc(o.bayar) + '</td></tr>';
+        });
+        var grand = (list || []).reduce(function (s, o) { return s + (o.total || 0); }, 0);
+        var now = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        document.getElementById('print-recap').innerHTML =
+          '<h2>REKAP PESANAN — NASI BAKAR ACA</h2>' +
+          '<div class="rc-center">Pengambilan: Senin, 19 Oktober 2026<br>Dicetak: ' + esc(now) + '</div>' +
+          '<div class="rc-line"></div>' +
+          '<table><thead><tr><th>No</th><th>Nama</th><th>Pesanan</th><th>Catatan</th><th>Bayar</th></tr></thead>' +
+          '<tbody>' + recapRows + '</tbody></table>' +
+          '<div class="rc-line"></div>' +
+          'Total order: ' + (list || []).length + ' &nbsp;|&nbsp; Total omzet: ' + rp(grand);
+      }
+
+      function fetchOrders() {
+        var cb = '__ord_' + Date.now().toString(36);
+        var params = new URLSearchParams({ action: 'orders', pin: omzetPin, callback: cb });
+        var script = document.createElement('script');
+        script.src = orderEndpoint + '?' + params.toString();
+        function cleanup() {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        }
+        var timer = setTimeout(function () { cleanup(); }, 20000);
+        window[cb] = function (res) { clearTimeout(timer); cleanup(); if (res && res.ok) renderOrders(res.orders); };
+        script.onerror = function () { clearTimeout(timer); cleanup(); };
+        document.head.appendChild(script);
       }
 
       function fetchOmzet() {
@@ -215,6 +291,7 @@
       document.getElementById('omzet-refresh').addEventListener('click', function () {
         if (omzetPin) fetchOmzet();
       });
+      document.getElementById('omzet-print').addEventListener('click', function () { window.print(); });
     })();
   </script>
 </body>
