@@ -83,9 +83,8 @@
     .omzet-print { padding: 12px 18px; border-radius: 12px; border: none; background: var(--leaf); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; }
     #print-recap { display: none; }
     @media print {
-      body * { visibility: hidden; }
-      #print-recap, #print-recap * { visibility: visible; }
-      #print-recap { display: block !important; position: absolute; top: 0; left: 0; width: 100%; color: #000; background: #fff; padding: 10px; font-size: 12px; }
+      body > * { display: none !important; }
+      #print-recap { display: block !important; color: #000; background: #fff; padding: 10px; font-size: 12px; }
       #print-recap h2 { text-align: center; margin: 0 0 2px; font-size: 16px; letter-spacing: 1px; }
       #print-recap .rc-center { text-align: center; }
       #print-recap .rc-line { border-top: 1px dashed #000; margin: 6px 0; }
@@ -135,10 +134,10 @@
           <button id="omzet-print" type="button" class="omzet-print">🖨️ Print Rekap</button>
         </div>
         <p class="omzet-updated" id="omz-updated"></p>
-        <div id="print-recap" aria-hidden="true"></div>
       </div>
     </section>
   </main>
+  <div id="print-recap" aria-hidden="true"></div>
   <script>
     /* Dashboard Omzet — JSONP ke Apps Script (PIN dicek di server) */
     (function () {
