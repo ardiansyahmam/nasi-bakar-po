@@ -1258,7 +1258,30 @@ document.getElementById('print-receipt').innerHTML=
 '<div class="rc-line"></div>Bayar: '+escHtml(paymentLabel(order.payment))+'<br>'+
 (order.notes?'Catatan: '+escHtml(order.notes)+'<br>':'')+
 '<div class="rc-line"></div><div class="rc-center">Terima kasih!</div>';
+window.lastThermalText=buildThermalText(order);
 }
+function thC(s){s=String(s==null?'':s);var p=Math.max(0,32-s.length);var l=Math.floor(p/2);return ' '.repeat(l)+s+' '.repeat(p-l);}
+function thLR(a,b){a=String(a==null?'':a);b=String(b==null?'':b);if(a.length+b.length>32)a=a.slice(0,Math.max(0,31-b.length));return a+' '.repeat(32-a.length-b.length)+b;}
+function buildThermalText(order){
+var total=order.items.reduce(function(s,it){return s+it.lineTotal;},0);
+var pickup=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(order.date+'T12:00:00'));
+var now=new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date());
+var sep='--------------------------------';
+var L=[thC('NASI BAKAR ACA'),thC('Struk Pesanan'),sep,
+'No: '+currentOrderId,'Tgl order: '+now,'Pengambilan: '+pickup,
+'Nama: '+order.name,'WA: '+order.phone,sep];
+order.items.forEach(function(it){
+var detail=getSpiceDetail(it)+(it.peteQty?', pete x'+it.peteQty:'');
+L.push(it.name+' x'+it.qty);
+L.push(thLR('('+detail+')',currency.format(it.lineTotal)));
+});
+L.push(sep);L.push(thLR('TOTAL',currency.format(total)));L.push(sep);
+L.push('Bayar: '+paymentLabel(order.payment));
+if(order.notes)L.push('Catatan: '+order.notes);
+L.push(sep);L.push(thC('Terima kasih!'));L.push('');L.push('');L.push('');
+return L.join('\n');
+}
+window.getThermalText=function(){return window.lastThermalText||'';};
 printReceiptButton.addEventListener('click', function(){ window.print(); });
 
 closeOrderModalButton.addEventListener('click', function () {
