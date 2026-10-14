@@ -81,17 +81,41 @@
     .omzet-updated { color: var(--muted); font-size: .8rem; margin: 0; }
     .omzet-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
     .omzet-print { padding: 12px 18px; border-radius: 12px; border: none; background: var(--leaf); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; }
-    #print-recap { display: none; }
+    #print-recap, #print-receipt { display: none; }
     @media print {
       body > * { display: none !important; }
-      #print-recap { display: block !important; color: #000; background: #fff; padding: 10px; font-size: 12px; }
+      #print-recap, #print-receipt { color: #000; background: #fff; padding: 10px; font-size: 12px; }
+      body.show-recap #print-recap { display: block !important; }
+      body.show-receipt #print-receipt { display: block !important; width: 100%; max-width: 320px; margin: 0 auto; font-family: ui-monospace, Menlo, Consolas, monospace; }
       #print-recap h2 { text-align: center; margin: 0 0 2px; font-size: 16px; letter-spacing: 1px; }
-      #print-recap .rc-center { text-align: center; }
-      #print-recap .rc-line { border-top: 1px dashed #000; margin: 6px 0; }
+      #print-recap .rc-center, #print-receipt .rc-center { text-align: center; }
+      #print-recap .rc-line, #print-receipt .rc-line { border-top: 1px dashed #000; margin: 6px 0; }
       #print-recap table { width: 100%; border-collapse: collapse; }
       #print-recap th, #print-recap td { border: 1px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; font-size: 11px; }
       #print-recap th { background: #eee; }
+      #print-receipt h3 { text-align: center; margin: 0 0 4px; font-size: 15px; letter-spacing: 2px; }
+      #print-receipt table { width: 100%; border-collapse: collapse; }
+      #print-receipt td { padding: 2px 0; vertical-align: top; }
+      #print-receipt td:last-child { text-align: right; white-space: nowrap; }
+      #print-receipt .rc-total td { font-weight: bold; font-size: 14px; border-top: 1px dashed #000; padding-top: 6px; }
+      #print-receipt small { font-size: 11px; }
     }
+    .row-actions { white-space: nowrap; }
+    .row-actions button { padding: 7px 10px; margin-right: 6px; border-radius: 9px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); font-size: .85rem; font-weight: 700; cursor: pointer; }
+    .row-actions button:last-child { margin-right: 0; }
+    .modal { position: fixed; inset: 0; background: rgba(20, 22, 15, .55); display: flex; align-items: flex-start; justify-content: center; padding: 24px 14px; z-index: 50; overflow-y: auto; }
+    .modal[hidden] { display: none; }
+    .modal-card { background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 22px; width: 100%; max-width: 480px; box-shadow: var(--shadow); }
+    .modal-card h3 { margin: 0 0 2px; font-size: 1.25rem; }
+    .modal-order { margin: 0 0 12px; color: var(--muted); font-size: .85rem; }
+    .modal-card label { display: block; margin: 10px 0; font-size: .88rem; font-weight: 600; }
+    .modal-card input[type="text"], .modal-card input[type="number"], .modal-card select { display: block; width: 100%; margin-top: 5px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--input); color: var(--ink); font-size: .95rem; }
+    .edit-menu { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
+    .edit-menu strong { font-size: .92rem; }
+    .em-price { color: var(--muted); font-weight: 500; font-size: .8rem; }
+    .em-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .em-row label { margin: 6px 0 0; font-size: .78rem; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
   </style>
 </head>
 <body>
@@ -127,7 +151,7 @@
         </table></div>
         <h3 class="omzet-sub">Daftar Pesanan</h3>
         <div class="omzet-table-wrap"><table class="omzet-table" id="omz-orders-table">
-          <thead><tr><th>No</th><th>Order ID</th><th>Nama</th><th>Pesanan</th><th>Catatan</th><th>Total</th><th>Bayar</th></tr></thead><tbody></tbody>
+          <thead><tr><th>No</th><th>Order ID</th><th>Nama</th><th>Pesanan</th><th>Catatan</th><th>Total</th><th>Bayar</th><th>Aksi</th></tr></thead><tbody></tbody>
         </table></div>
         <div class="omzet-actions">
           <button id="omzet-refresh" type="button" class="omzet-refresh">🔄 Muat ulang</button>
@@ -138,13 +162,63 @@
     </section>
   </main>
   <div id="print-recap" aria-hidden="true"></div>
+  <div id="print-receipt" aria-hidden="true"></div>
+  <div id="edit-modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h3 id="edit-title">✏️ Edit Pesanan</h3>
+      <p class="modal-order" id="edit-order-id"></p>
+      <label>Nama pemesan <input id="edit-nama" type="text" autocomplete="off" /></label>
+      <label>Nomor WhatsApp <input id="edit-wa" type="text" inputmode="tel" autocomplete="off" /></label>
+      <div class="edit-menu">
+        <strong>Nasi Bakar Ayam <span class="em-price">Rp15.000</span></strong>
+        <div class="em-row">
+          <label>Qty <input id="edit-qty-ayam" type="number" min="0" max="99" value="0" /></label>
+          <label>Pedas <input id="edit-pedas-ayam" type="number" min="0" max="99" value="0" /></label>
+          <label>Pete <input id="edit-pete-ayam" type="number" min="0" max="99" value="0" /></label>
+        </div>
+      </div>
+      <div class="edit-menu">
+        <strong>Nasi Bakar Sambal Cumi <span class="em-price">Rp18.000</span></strong>
+        <div class="em-row">
+          <label>Qty <input id="edit-qty-cumi" type="number" min="0" max="99" value="0" /></label>
+          <label>Pedas <input id="edit-pedas-cumi" type="number" min="0" max="99" value="0" /></label>
+          <label>Pete <input id="edit-pete-cumi" type="number" min="0" max="99" value="0" /></label>
+        </div>
+      </div>
+      <div class="edit-menu">
+        <strong>Nasi Bakar Ikan Teri <span class="em-price">Rp15.000</span></strong>
+        <div class="em-row">
+          <label>Qty <input id="edit-qty-tongkol" type="number" min="0" max="99" value="0" /></label>
+          <label>Pedas <input id="edit-pedas-tongkol" type="number" min="0" max="99" value="0" /></label>
+          <label>Pete <input id="edit-pete-tongkol" type="number" min="0" max="99" value="0" /></label>
+        </div>
+      </div>
+      <label>Tanggal pengambilan <input id="edit-tanggal" type="text" autocomplete="off" /></label>
+      <label>Metode bayar
+        <select id="edit-bayar">
+          <option value="Cash">Cash</option>
+          <option value="Transfer">Transfer</option>
+          <option value="QRIS">QRIS</option>
+        </select>
+      </label>
+      <label>Catatan <input id="edit-catatan" type="text" autocomplete="off" /></label>
+      <p id="edit-error" class="omzet-error" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button id="edit-cancel" type="button" class="omzet-refresh">Batal</button>
+        <button id="edit-save" type="button" class="omzet-print">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
   <script>
     /* Dashboard Omzet — JSONP ke Apps Script (PIN dicek di server) */
     (function () {
       var orderEndpoint = 'https://script.google.com/macros/s/AKfycbzBqUi_Uz7wREW615t1_2XJDKFC5Kbt7yNpd8yHLlQtdtONaLvB1f_DXJSlFvutXVJQMg/exec';
       var MENU_PRICE = { ayam: 15000, cumi: 18000, tongkol: 15000 };
       var MENU_NAME = { ayam: 'Nasi Bakar Ayam', cumi: 'Nasi Bakar Sambal Cumi', tongkol: 'Nasi Bakar Ikan Teri' };
+      var PETE_LABEL = { ayam: 'Ayam', cumi: 'Sambal Cumi', tongkol: 'Ikan Teri' };
       var omzetPin = '';
+      var lastOrders = [];
+      var editOrderId = '';
 
       function rp(n) { return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
 
@@ -196,6 +270,7 @@
       }
 
       function renderOrders(list) {
+        lastOrders = list || [];
         var body = document.querySelector('#omz-orders-table tbody');
         body.innerHTML = '';
         var recapRows = '';
@@ -211,6 +286,18 @@
           [['', (i + 1)], ['', o.id], ['', o.nama], ['', pesanan], ['', o.catatan],
            ['', rp(o.total)], ['', (o.bayar || '') + (o.status ? ' (' + o.status + ')' : '')]
           ].forEach(function (c) { var td = document.createElement('td'); td.textContent = c[1]; tr.appendChild(td); });
+          var actTd = document.createElement('td');
+          actTd.className = 'row-actions';
+          var bPrint = document.createElement('button');
+          bPrint.type = 'button'; bPrint.textContent = '🖨️';
+          bPrint.title = 'Print ulang struk'; bPrint.setAttribute('data-act', 'print');
+          bPrint.setAttribute('data-id', o.id);
+          var bEdit = document.createElement('button');
+          bEdit.type = 'button'; bEdit.textContent = '✏️';
+          bEdit.title = 'Edit pesanan'; bEdit.setAttribute('data-act', 'edit');
+          bEdit.setAttribute('data-id', o.id);
+          actTd.appendChild(bPrint); actTd.appendChild(bEdit);
+          tr.appendChild(actTd);
           body.appendChild(tr);
           recapRows += '<tr><td>' + (i + 1) + '</td><td>' + esc(o.nama) + '<br><small>' + esc(o.id) + '</small></td>' +
             '<td>' + esc(pesanan) + '</td><td>' + esc(o.catatan) + '</td><td>' + esc(o.bayar) + '</td></tr>';
@@ -246,6 +333,154 @@
           finish(ok);
         };
         script.onerror = function () { clearTimeout(timer); cleanup(); finish(false); };
+        document.head.appendChild(script);
+      }
+
+      function pedasCount(vStr, qty) {
+        var s = String(vStr || '');
+        var m = s.match(/pedas x(\d+)/i);
+        if (m) return parseInt(m[1], 10);
+        if (s.trim().toLowerCase() === 'pedas') return qty;
+        return 0;
+      }
+
+      function peteCount(peteStr, label) {
+        var s = String(peteStr || '');
+        var q = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var m = s.match(new RegExp(q + ' x(\\d+)'));
+        return m ? parseInt(m[1], 10) : 0;
+      }
+
+      function findOrder(id) {
+        for (var i = 0; i < lastOrders.length; i++) {
+          if (String(lastOrders[i].id) === String(id)) return lastOrders[i];
+        }
+        return null;
+      }
+
+      function buildReceiptHtml(o) {
+        var now = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        function row(qty, key) {
+          if (!qty) return '';
+          var detail = o[{ ayam: 'vAyam', cumi: 'vCumi', teri: 'vTeri' }[key]] || 'Tidak Pedas';
+          var pn = peteCount(o.pete, PETE_LABEL[key]);
+          if (pn > 0) detail += ', pete x' + pn;
+          return '<tr><td>' + esc(MENU_NAME[key]) + ' x' + qty + '<br><small>(' + esc(detail) + ')</small></td>' +
+            '<td>' + rp(qty * MENU_PRICE[key]) + '</td></tr>';
+        }
+        var rows = row(o.ayam, 'ayam') + row(o.cumi, 'cumi') + row(o.teri, 'teri');
+        return '<h3>NASI BAKAR ACA</h3><div class="rc-center">Struk Pesanan (cetak ulang)</div><div class="rc-line"></div>' +
+          'No: ' + esc(o.id) + '<br>Dicetak: ' + esc(now) + '<br>Pengambilan: ' + esc(o.tanggal || 'Senin, 19 Oktober 2026') + '<br>' +
+          'Nama: ' + esc(o.nama) + '<br>WA: ' + esc(o.wa) + '<br><div class="rc-line"></div>' +
+          '<table>' + rows + '</table><table><tr class="rc-total"><td>TOTAL</td><td>' + rp(o.total) + '</td></tr></table>' +
+          '<div class="rc-line"></div>Bayar: ' + esc(o.bayar) + (o.status ? ' (' + esc(o.status) + ')' : '') + '<br>' +
+          (o.catatan ? 'Catatan: ' + esc(o.catatan) + '<br>' : '') +
+          '<div class="rc-line"></div><div class="rc-center">Terima kasih!</div>';
+      }
+
+      function reprintOrder(id) {
+        var o = findOrder(id);
+        if (!o) return;
+        document.getElementById('print-receipt').innerHTML = buildReceiptHtml(o);
+        document.body.classList.remove('show-recap');
+        document.body.classList.add('show-receipt');
+        window.print();
+      }
+
+      /* ---------- Edit pesanan ---------- */
+      var editModal = document.getElementById('edit-modal');
+      var editError = document.getElementById('edit-error');
+
+      function numVal(id) {
+        var n = parseInt(document.getElementById(id).value, 10);
+        return isNaN(n) || n < 0 ? 0 : n;
+      }
+
+      function openEdit(id) {
+        var o = findOrder(id);
+        if (!o) return;
+        editOrderId = o.id;
+        document.getElementById('edit-order-id').textContent = 'Order ' + o.id;
+        document.getElementById('edit-nama').value = o.nama || '';
+        document.getElementById('edit-wa').value = o.wa || '';
+        [['ayam', o.ayam, o.vAyam], ['cumi', o.cumi, o.vCumi], ['tongkol', o.teri, o.vTeri]].forEach(function (m) {
+          var key = m[0], qty = m[1] || 0;
+          document.getElementById('edit-qty-' + key).value = qty;
+          document.getElementById('edit-pedas-' + key).value = pedasCount(m[2], qty);
+          document.getElementById('edit-pete-' + key).value = peteCount(o.pete, PETE_LABEL[key]);
+        });
+        document.getElementById('edit-tanggal').value = o.tanggal || '';
+        var bayarSel = document.getElementById('edit-bayar');
+        var bv = String(o.bayar || 'Cash');
+        for (var i = 0; i < bayarSel.options.length; i++) {
+          if (bayarSel.options[i].value.toLowerCase() === bv.toLowerCase()) { bayarSel.selectedIndex = i; break; }
+        }
+        document.getElementById('edit-catatan').value = o.catatan || '';
+        editError.hidden = true;
+        editModal.hidden = false;
+      }
+
+      function closeEdit() { editModal.hidden = true; editOrderId = ''; }
+
+      function saveEdit() {
+        var nama = document.getElementById('edit-nama').value.trim();
+        if (!nama) { editError.textContent = 'Nama pemesan wajib diisi.'; editError.hidden = false; return; }
+        var menus = ['ayam', 'cumi', 'tongkol'];
+        var vals = {};
+        var totalQty = 0;
+        menus.forEach(function (k) {
+          var q = numVal('edit-qty-' + k);
+          vals[k] = {
+            qty: q,
+            pedas: Math.min(numVal('edit-pedas-' + k), q),
+            pete: Math.min(numVal('edit-pete-' + k), q)
+          };
+          totalQty += q;
+        });
+        if (totalQty <= 0) { editError.textContent = 'Minimal satu menu harus dipesan.'; editError.hidden = false; return; }
+        var saveBtn = document.getElementById('edit-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Menyimpan...';
+        editError.hidden = true;
+        var params = {
+          action: 'update', pin: omzetPin, callback: '__upd_' + Date.now().toString(36),
+          order_id: editOrderId, nama: nama, wa: document.getElementById('edit-wa').value.trim(),
+          ayam: vals.ayam.qty, cumi: vals.cumi.qty, tongkol: vals.tongkol.qty,
+          var_ayam: vals.ayam.pedas, var_cumi: vals.cumi.pedas, var_tongkol: vals.tongkol.pedas,
+          pete_ayam: vals.ayam.pete, pete_cumi: vals.cumi.pete, pete_tongkol: vals.tongkol.pete,
+          tanggal: document.getElementById('edit-tanggal').value.trim(),
+          bayar: document.getElementById('edit-bayar').value,
+          catatan: document.getElementById('edit-catatan').value.trim()
+        };
+        var cb = params.callback;
+        var qs = new URLSearchParams(params);
+        var script = document.createElement('script');
+        script.src = orderEndpoint + '?' + qs.toString();
+        var done = false;
+        function cleanup() {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        }
+        function restore() { saveBtn.disabled = false; saveBtn.textContent = '💾 Simpan'; }
+        var timer = setTimeout(function () {
+          if (done) return; done = true; cleanup(); restore();
+          editError.textContent = 'Koneksi lambat. Coba lagi.'; editError.hidden = false;
+        }, 25000);
+        window[cb] = function (res) {
+          if (done) return; done = true; clearTimeout(timer); cleanup(); restore();
+          if (!res || res.ok !== true) {
+            editError.textContent = (res && res.error) ? res.error : 'Gagal menyimpan perubahan.';
+            editError.hidden = false;
+            return;
+          }
+          closeEdit();
+          fetchOmzet();
+        };
+        script.onerror = function () {
+          if (done) return; done = true; clearTimeout(timer); cleanup(); restore();
+          editError.textContent = 'Tidak bisa menghubungi server.';
+          editError.hidden = false;
+        };
         document.head.appendChild(script);
       }
 
@@ -303,11 +538,29 @@
         var label = btn.innerHTML;
         btn.disabled = true;
         btn.textContent = 'Menyiapkan...';
+        document.getElementById('print-receipt').innerHTML = '';
+        document.body.classList.remove('show-receipt');
+        document.body.classList.add('show-recap');
         fetchOrders(function () {
           btn.disabled = false;
           btn.innerHTML = label;
           window.print();
         });
+      });
+      document.querySelector('#omz-orders-table tbody').addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-id');
+        if (btn.getAttribute('data-act') === 'print') reprintOrder(id);
+        else openEdit(id);
+      });
+      document.getElementById('edit-cancel').addEventListener('click', closeEdit);
+      document.getElementById('edit-save').addEventListener('click', saveEdit);
+      editModal.addEventListener('click', function (e) {
+        if (e.target === editModal) closeEdit();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !editModal.hidden) closeEdit();
       });
     })();
   </script>
