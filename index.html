@@ -504,9 +504,12 @@ h1 { font-size: clamp(3.15rem, 16vw, 4.5rem); }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 
+
+.admin-link{position:fixed;top:10px;right:12px;z-index:50;font-size:.72rem;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);opacity:.75;box-shadow:var(--soft-shadow);}.admin-link:hover{opacity:1;text-decoration:underline;}
 </style>
 </head>
 <body>
+<a class="admin-link" href="omzet/">admin login</a>
 <main class="page">
 <section class="hero" aria-labelledby="hero-title">
 <div class="hero-copy">
