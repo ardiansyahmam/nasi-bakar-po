@@ -378,10 +378,37 @@
           '<div class="rc-line"></div><div class="rc-center">Terima kasih!</div>';
       }
 
+      function thC(s) { s = String(s == null ? '' : s); var p = Math.max(0, 32 - s.length); var l = Math.floor(p / 2); return ' '.repeat(l) + s + ' '.repeat(p - l); }
+      function thLR(a, b) { a = String(a == null ? '' : a); b = String(b == null ? '' : b); if (a.length + b.length > 32) a = a.slice(0, Math.max(0, 31 - b.length)); return a + ' '.repeat(32 - a.length - b.length) + b; }
+
+      function buildThermalTextOmzet(o) {
+        var now = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        var sep = '--------------------------------';
+        var L = [thC('NASI BAKAR ACA'), thC('Struk Pesanan'), sep,
+          'No: ' + o.id, 'Dicetak: ' + now, 'Ambil: ' + (o.tanggal || 'Senin, 19 Oktober 2026'),
+          'Nama: ' + o.nama, 'WA: ' + o.wa, sep];
+        [['ayam', o.ayam, 'vAyam'], ['cumi', o.cumi, 'vCumi'], ['teri', o.teri, 'vTeri']].forEach(function (m) {
+          var key = m[0], qty = m[1] || 0;
+          if (!qty) return;
+          var detail = o[m[2]] || 'Tidak Pedas';
+          var pn = peteCount(o.pete, PETE_LABEL[key]);
+          if (pn > 0) detail += ', pete x' + pn;
+          L.push(MENU_NAME[key] + ' x' + qty);
+          L.push(thLR('(' + detail + ')', rp(qty * MENU_PRICE[key])));
+        });
+        L.push(sep); L.push(thLR('TOTAL', rp(o.total))); L.push(sep);
+        L.push('Bayar: ' + o.bayar + (o.status ? ' (' + o.status + ')' : ''));
+        if (o.catatan) L.push('Catatan: ' + o.catatan);
+        L.push(sep); L.push(thC('Terima kasih!')); L.push(''); L.push(''); L.push('');
+        return L.join('\n');
+      }
+      window.getThermalText = function () { return window.lastThermalText || ''; };
+
       function reprintOrder(id) {
         var o = findOrder(id);
         if (!o) return;
         document.getElementById('print-receipt').innerHTML = buildReceiptHtml(o);
+        window.lastThermalText = buildThermalTextOmzet(o);
         document.body.classList.remove('show-recap');
         document.body.classList.add('show-receipt');
         window.print();
