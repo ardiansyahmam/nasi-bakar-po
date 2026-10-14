@@ -506,6 +506,21 @@ h1 { font-size: clamp(3.15rem, 16vw, 4.5rem); }
 
 
 .admin-link{position:fixed;top:10px;right:12px;z-index:50;font-size:.72rem;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);opacity:.75;box-shadow:var(--soft-shadow);}.admin-link:hover{opacity:1;text-decoration:underline;}
+.modal-actions{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
+.btn-print{padding:12px 20px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:.95rem;cursor:pointer;}
+#print-receipt{display:none;}
+@media print{
+body>*{display:none!important;}
+#print-receipt{display:block!important;width:100%;max-width:320px;margin:0 auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#000;background:#fff;padding:10px;}
+#print-receipt h3{text-align:center;margin:0 0 4px;font-size:15px;letter-spacing:2px;}
+#print-receipt .rc-center{text-align:center;}
+#print-receipt .rc-line{border-top:1px dashed #000;margin:6px 0;}
+#print-receipt table{width:100%;border-collapse:collapse;}
+#print-receipt td{padding:2px 0;vertical-align:top;}
+#print-receipt td:last-child{text-align:right;white-space:nowrap;}
+#print-receipt .rc-total td{font-weight:bold;font-size:14px;border-top:1px dashed #000;padding-top:6px;}
+#print-receipt small{font-size:11px;}
+}
 </style>
 </head>
 <body>
@@ -692,6 +707,7 @@ Dibungkus daun pisang, dibakar saat pesanan disiapkan
 <p class="credits">Foto ilustrasi menu bersumber dari <a href="https://www.sasa.co.id/recipe/search" target="_blank" rel="noopener">Sasa</a>, <a href="https://www.ladiestory.id/resep-nasi-bakar-cumi-harum-lezat-dan-menggugah-selera-61581/amp" target="_blank" rel="noopener">Ladiestory</a>, dan <a href="https://www.fimela.com/parenting/read/3763048/resep-anak-nasi-bakar-ikan-teri-kemangi" target="_blank" rel="noopener">Fimela</a>.</p>
 </main>
 
+<div id="print-receipt" aria-hidden="true"></div>
 <div class="order-modal" id="orderModal" aria-hidden="true">
 <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle" aria-describedby="orderModalMessage">
 <div class="modal-mark" aria-hidden="true">
@@ -711,7 +727,7 @@ Dibungkus daun pisang, dibakar saat pesanan disiapkan
 <div class="qris-code" id="qrisCode" aria-label="Kode QRIS pembayaran"></div>
 <p class="qris-status" id="qrisStatus">Pastikan nominal yang tampil di aplikasi pembayaran sudah sesuai sebelum membayar.</p>
 </div>
-<button class="primary" id="closeOrderModal" type="button">OK</button>
+<div class="modal-actions"><button class="btn-print" id="printReceiptButton" type="button" hidden>\U0001F5A8\uFE0F Print Struk</button><button class="primary" id="closeOrderModal" type="button">OK</button></div>
 </div>
 </div>
 
@@ -736,6 +752,7 @@ var qrisAmountEl = document.getElementById('qrisAmount');
 var qrisCodeEl = document.getElementById('qrisCode');
 var qrisStatusEl = document.getElementById('qrisStatus');
 var closeOrderModalButton = document.getElementById('closeOrderModal');
+var printReceiptButton = document.getElementById('printReceiptButton');
 var submitButton = document.getElementById('submitOrder');
 var whatsappLink = document.getElementById('whatsappLink');
 var fixedOrderDate = '2026-10-19';
@@ -1019,6 +1036,7 @@ renderPaymentQris(order);
 qrisPaymentEl.hidden = true;
 }
 closeOrderModalButton.textContent = 'Tutup';
+printReceiptButton.hidden = true;
 setOrderModalVisibility(true);
 }
 
@@ -1044,6 +1062,8 @@ qrisCodeEl.innerHTML = '';
 qrisCodeEl.removeAttribute('data-payload');
 }
 closeOrderModalButton.textContent = 'OK';
+buildReceipt(order);
+printReceiptButton.hidden = false;
 setOrderModalVisibility(true);
 }
 
@@ -1219,6 +1239,27 @@ whatsappLink.href = buildWhatsAppUrl(order);
 });
 
 copyAccountButton.addEventListener('click', copyAccountNumber);
+
+function escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function paymentLabel(p){if(p==='transfer')return 'Transfer BCA';if(p==='qris')return 'QRIS';return 'Cash';}
+function buildReceipt(order){
+var total=order.items.reduce(function(s,it){return s+it.lineTotal;},0);
+var pickup=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(order.date+'T12:00:00'));
+var now=new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date());
+var rows=order.items.map(function(it){
+var detail=getSpiceDetail(it)+(it.peteQty?', pete x'+it.peteQty:'');
+return '<tr><td>'+escHtml(it.name)+' x'+it.qty+'<br><small>('+escHtml(detail)+')</small></td><td>'+currency.format(it.lineTotal)+'</td></tr>';
+}).join('');
+document.getElementById('print-receipt').innerHTML=
+'<h3>NASI BAKAR ACA</h3><div class="rc-center">Struk Pesanan</div><div class="rc-line"></div>'+
+'No: '+escHtml(currentOrderId)+'<br>Tgl order: '+escHtml(now)+'<br>Pengambilan: '+escHtml(pickup)+'<br>'+
+'Nama: '+escHtml(order.name)+'<br>WA: '+escHtml(order.phone)+'<br><div class="rc-line"></div>'+
+'<table>'+rows+'</table><table><tr class="rc-total"><td>TOTAL</td><td>'+currency.format(total)+'</td></tr></table>'+
+'<div class="rc-line"></div>Bayar: '+escHtml(paymentLabel(order.payment))+'<br>'+
+(order.notes?'Catatan: '+escHtml(order.notes)+'<br>':'')+
+'<div class="rc-line"></div><div class="rc-center">Terima kasih!</div>';
+}
+printReceiptButton.addEventListener('click', function(){ window.print(); });
 
 closeOrderModalButton.addEventListener('click', function () {
 setOrderModalVisibility(false);
