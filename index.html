@@ -809,9 +809,9 @@ return Math.min(quantities[id], Math.max(0, peteQuantities[id] || 0));
 
 function getSpiceDetail(item) {
 var mildQty = item.qty - item.spicyQty;
-if (item.spicyQty === 0) return 'tidak';
-if (mildQty === 0) return 'pedas';
-return 'pedas x' + item.spicyQty + ', tidak x' + mildQty;
+if (item.spicyQty === 0) return 'Tidak Pedas';
+if (mildQty === 0) return 'Pedas';
+return 'Pedas x' + item.spicyQty + ', Tidak Pedas x' + mildQty;
 }
 
 function getItems() {
@@ -836,7 +836,7 @@ function renderSummary() {
 var items = getItems();
 var total = items.reduce(function (sum, item) { return sum + item.lineTotal; }, 0);
 var rows = items.map(function (item) {
-var menuName = item.name.replace(/^Nasi Bakar\s+/, '');
+var menuName = item.name;
 var detail = getSpiceDetail(item) + (item.peteQty ? ', pete x' + item.peteQty : '');
 return '<div class="summary-row"><span>' + menuName + ' x' + item.qty + ' (' + detail + ')</span><span>' + currency.format(item.lineTotal) + '</span></div>';
 }).join('');
@@ -1002,7 +1002,7 @@ activeJsonp = null;
 
 function getOrderItemSummary(order) {
 return order.items.map(function (item) {
-var menuName = item.name.replace(/^Nasi Bakar\s+/, '');
+var menuName = item.name;
 var itemDetail = getSpiceDetail(item) + (item.peteQty ? ', pete x' + item.peteQty : '');
 return menuName + ' x' + item.qty + ' (' + itemDetail + ')';
 }).join(', ');
