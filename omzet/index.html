@@ -405,6 +405,11 @@
       }
       window.getThermalText = function (cols) { var o = window.lastThermalOrderOmzet; return o ? buildThermalTextOmzet(o, cols || 48) : ''; };
 
+      function doPrint() {
+        if (window.AndroidPOS && window.AndroidPOS.printReceipt) { window.AndroidPOS.printReceipt(); }
+        else { window.print(); }
+      }
+
       function reprintOrder(id) {
         var o = findOrder(id);
         if (!o) return;
@@ -413,7 +418,7 @@
         window.lastThermalText = buildThermalTextOmzet(o, 48);
         document.body.classList.remove('show-recap');
         document.body.classList.add('show-receipt');
-        window.print();
+        doPrint();
       }
 
       /* ---------- Edit pesanan ---------- */
@@ -573,7 +578,7 @@
         fetchOrders(function () {
           btn.disabled = false;
           btn.innerHTML = label;
-          window.print();
+          doPrint();
         });
       });
       document.querySelector('#omz-orders-table tbody').addEventListener('click', function (e) {
